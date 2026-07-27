@@ -18,7 +18,7 @@
       min-height: 100vh; 
       margin: 0; 
       padding: 15px; 
-      overflow: hidden; /* Keep flowers inside */
+      overflow: hidden;
       position: relative;
     }
 
@@ -29,7 +29,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      z-index: 0; /* Behind content */
+      z-index: 0;
       overflow: hidden;
     }
 
@@ -38,17 +38,14 @@
       width: 120px;
       height: 120px;
       opacity: 0.8;
-      /* Blooming & Rotating animation combined */
       animation: bloomRotate 20s infinite linear, floatAround 30s infinite ease-in-out;
     }
 
-    /* Sunflower Design SVG */
     .sunflower svg {
       width: 100%;
       height: 100%;
     }
 
-    /* Positioning 5 distinct sunflowers */
     .sf-1 { top: 10%; left: 10%; animation-delay: 0s, -5s; width: 140px; height: 140px;}
     .sf-2 { top: 70%; left: 15%; animation-delay: -2s, -12s; width: 100px; height: 100px;}
     .sf-3 { top: 20%; left: 80%; animation-delay: -4s, -20s; width: 160px; height: 160px;}
@@ -57,7 +54,7 @@
 
     @keyframes bloomRotate {
       0% { transform: scale(0.8) rotate(0deg); }
-      50% { transform: scale(1.1) rotate(180deg); } /* Blooming effect */
+      50% { transform: scale(1.1) rotate(180deg); }
       100% { transform: scale(0.8) rotate(360deg); }
     }
 
@@ -70,7 +67,6 @@
 
     /* --- Prettier UI Elements --- */
     .card { 
-      /* Glassmorphism style */
       background: rgba(255, 255, 255, 0.55); 
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
@@ -80,7 +76,7 @@
       max-width: 420px; 
       box-shadow: 0 12px 32px rgba(255, 100, 150, 0.2);
       border: 1px solid rgba(255, 255, 255, 0.7);
-      z-index: 10; /* Above flowers */
+      z-index: 10;
       position: relative;
     }
 
@@ -112,7 +108,6 @@
 
     textarea { resize: vertical; min-height: 90px; }
 
-    /* Button Gradient and prettier styles */
     button { 
       background: linear-gradient(45deg, #ff9a9e 0%, #fad0c4 99%);
       color: #fff; 
@@ -266,9 +261,9 @@
     let latestMessage = "";
     let hasNewMessage = false;
 
-    // Nordic UART BLE Service & Characteristic UUIDs
-    const BLE_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-    const BLE_CHAR_UUID    = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+    // Updated BLE Service & Characteristic UUIDs matching your ESP32 code
+    const BLE_SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+    const BLE_CHAR_UUID    = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 
     window.login = function() {
       const input = document.getElementById("login-input").value.trim().toUpperCase();
@@ -300,27 +295,23 @@
       sendBtn.disabled = true;
       sendBtn.innerText = "Sending...";
 
-      // Send message to Recipient's node in Firebase
       set(ref(db, 'inbox/' + recipient), {
         text: text,
         isNew: true
       }).then(() => {
-        textInput.value = ""; // Clear text field
+        textInput.value = "";
 
-        // Change button appearance to Green "Sent! ✔️"
         const originalText = "Send Message";
         const originalBg = sendBtn.style.background;
         
         sendBtn.innerText = "Sent! ✔️";
-        // Override gradient with success green
         sendBtn.style.background = "linear-gradient(45deg, #2ecc71 0%, #27ae60 100%)"; 
         sendBtn.style.boxShadow = "0 4px 15px rgba(46, 204, 113, 0.4)";
 
-        // Reset button back to default after 2 seconds (2000 ms)
         setTimeout(() => {
           sendBtn.innerText = originalText;
-          sendBtn.style.background = originalBg; // Restore original gradient style defined in CSS
-          sendBtn.style.boxShadow = ""; // Restore CSS shadow
+          sendBtn.style.background = originalBg; 
+          sendBtn.style.boxShadow = ""; 
           sendBtn.disabled = false;
         }, 2000);
       }).catch((error) => {
@@ -332,7 +323,6 @@
     };
 
     function listenForMessages() {
-      // Listen to Current User's Inbox
       const myInboxRef = ref(db, 'inbox/' + currentUser);
       onValue(myInboxRef, (snapshot) => {
         const data = snapshot.val();
@@ -356,11 +346,10 @@
         return;
       }
 
-      const expectedDeviceName = currentUser + "'s Device";
-
       try {
+        // acceptAllDevices displays ALL available/scanned Bluetooth devices in the browser menu
         const device = await navigator.bluetooth.requestDevice({
-          filters: [{ name: expectedDeviceName }],
+          acceptAllDevices: true,
           optionalServices: [BLE_SERVICE_UUID]
         });
 
@@ -372,7 +361,7 @@
         const encoder = new TextEncoder();
         await characteristic.writeValue(encoder.encode(latestMessage));
 
-        alert("Message transferred to your ESP32 display!");
+        alert("Message transferred to " + (device.name || "ESP32") + "!");
 
         // Clear 'isNew' status in Firebase
         set(ref(db, 'inbox/' + currentUser), {
