@@ -12,7 +12,7 @@
     input, textarea, button { width: 100%; margin-bottom: 15px; border-radius: 10px; border: none; outline: none; font-size: 16px; }
     input, textarea { background: #2a2a2a; color: #fff; padding: 12px; }
     textarea { resize: vertical; min-height: 80px; }
-    button { background: #3b82f6; color: white; padding: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    button { background: #3b82f6; color: white; padding: 14px; font-weight: bold; cursor: pointer; transition: background-color 0.3s ease, transform 0.1s ease; }
     button:active { transform: scale(0.98); opacity: 0.9; }
     .box { background: #262626; border: 1px solid #333; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
     .status-badge { display: block; text-align: center; font-size: 18px; font-weight: bold; padding: 10px; border-radius: 8px; }
@@ -37,7 +37,7 @@
       <div class="box">
         <h3>1. Send Message</h3>
         <textarea id="message-input" placeholder="Type your secret message here..."></textarea>
-        <button onclick="sendMessage()">Send Message</button>
+        <button id="send-btn" onclick="sendMessage()">Send Message</button>
       </div>
 
       <div class="box">
@@ -96,16 +96,31 @@
     };
 
     window.sendMessage = function() {
-      const text = document.getElementById("message-input").value.trim();
-      if (!text) return alert("Please type a message.");
+      const textInput = document.getElementById("message-input");
+      const sendBtn = document.getElementById("send-btn");
+      const text = textInput.value.trim();
+      
+      if (!text) return;
 
       // Send message to Recipient's node in Firebase
       set(ref(db, 'inbox/' + recipient), {
         text: text,
         isNew: true
       }).then(() => {
-        alert("Message Sent securely to " + recipient + "!");
-        document.getElementById("message-input").value = "";
+        textInput.value = ""; // Clear text field
+
+        // Change button appearance to Green "Sent! ✔️"
+        const originalText = "Send Message";
+        sendBtn.innerText = "Sent! ✔️";
+        sendBtn.style.backgroundColor = "#22c55e"; // Green
+        sendBtn.disabled = true;
+
+        // Reset button back to default after 2 seconds (2000 ms)
+        setTimeout(() => {
+          sendBtn.innerText = originalText;
+          sendBtn.style.backgroundColor = "#3b82f6"; // Original Blue
+          sendBtn.disabled = false;
+        }, 2000);
       });
     };
 
