@@ -5,28 +5,223 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Secret Messaging Hub</title>
   <style>
-    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: #121212; color: #ffffff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 15px; }
-    .card { background: #1e1e1e; border-radius: 16px; padding: 24px; width: 100%; max-width: 400px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
-    h2, h3 { text-align: center; margin-top: 0; color: #4dabf7; }
-    input, textarea, button { width: 100%; margin-bottom: 15px; border-radius: 10px; border: none; outline: none; font-size: 16px; }
-    input, textarea { background: #2a2a2a; color: #fff; padding: 12px; }
-    textarea { resize: vertical; min-height: 80px; }
-    button { background: #3b82f6; color: white; padding: 14px; font-weight: bold; cursor: pointer; transition: background-color 0.3s ease, transform 0.1s ease; }
-    button:active { transform: scale(0.98); opacity: 0.9; }
-    .box { background: #262626; border: 1px solid #333; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
-    .status-badge { display: block; text-align: center; font-size: 18px; font-weight: bold; padding: 10px; border-radius: 8px; }
-    .status-new { background: #15803d; color: #dcfce7; }
-    .status-none { background: #374151; color: #9ca3af; }
+    * { box-sizing: border-box; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+    
+    body { 
+      /* Pink and Yellow Gradient Theme */
+      background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+      background-image: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 50%, #fbc2eb 100%);
+      
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      min-height: 100vh; 
+      margin: 0; 
+      padding: 15px; 
+      overflow: hidden; /* Keep flowers inside */
+      position: relative;
+    }
+
+    /* --- Background Sunflowers --- */
+    .sunflower-area {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0; /* Behind content */
+      overflow: hidden;
+    }
+
+    .sunflower {
+      position: absolute;
+      width: 120px;
+      height: 120px;
+      opacity: 0.8;
+      /* Blooming & Rotating animation combined */
+      animation: bloomRotate 20s infinite linear, floatAround 30s infinite ease-in-out;
+    }
+
+    /* Sunflower Design SVG */
+    .sunflower svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Positioning 5 distinct sunflowers */
+    .sf-1 { top: 10%; left: 10%; animation-delay: 0s, -5s; width: 140px; height: 140px;}
+    .sf-2 { top: 70%; left: 15%; animation-delay: -2s, -12s; width: 100px; height: 100px;}
+    .sf-3 { top: 20%; left: 80%; animation-delay: -4s, -20s; width: 160px; height: 160px;}
+    .sf-4 { top: 75%; left: 75%; animation-delay: -6s, -8s; width: 110px; height: 110px;}
+    .sf-5 { top: 45%; left: 50%; animation-delay: -8s, -2s; width: 90px; height: 90px; opacity: 0.5;}
+
+    @keyframes bloomRotate {
+      0% { transform: scale(0.8) rotate(0deg); }
+      50% { transform: scale(1.1) rotate(180deg); } /* Blooming effect */
+      100% { transform: scale(0.8) rotate(360deg); }
+    }
+
+    @keyframes floatAround {
+      0%, 100% { transform: translate(0, 0); }
+      25% { transform: translate(20px, -30px); }
+      50% { transform: translate(-20px, 20px); }
+      75% { transform: translate(30px, 30px); }
+    }
+
+    /* --- Prettier UI Elements --- */
+    .card { 
+      /* Glassmorphism style */
+      background: rgba(255, 255, 255, 0.55); 
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 24px; 
+      padding: 30px; 
+      width: 100%; 
+      max-width: 420px; 
+      box-shadow: 0 12px 32px rgba(255, 100, 150, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      z-index: 10; /* Above flowers */
+      position: relative;
+    }
+
+    h2, h3 { text-align: center; margin-top: 0; color: #ff6b6b; font-weight: 700; }
+    h3 { color: #f7b731; font-size: 1.2rem; margin-bottom: 10px; text-shadow: 1px 1px 1px rgba(0,0,0,0.05);}
+    
+    input, textarea, button { 
+      width: 100%; 
+      margin-bottom: 18px; 
+      border-radius: 12px; 
+      border: none; 
+      outline: none; 
+      font-size: 16px; 
+      transition: all 0.3s ease;
+    }
+
+    input, textarea { 
+      background: rgba(255, 255, 255, 0.8); 
+      color: #555; 
+      padding: 14px; 
+      border: 1px solid #ffe0e6;
+    }
+    
+    input:focus, textarea:focus {
+      border-color: #ff9a9e;
+      background: rgba(255, 255, 255, 1);
+      box-shadow: 0 0 10px rgba(255, 154, 158, 0.3);
+    }
+
+    textarea { resize: vertical; min-height: 90px; }
+
+    /* Button Gradient and prettier styles */
+    button { 
+      background: linear-gradient(45deg, #ff9a9e 0%, #fad0c4 99%);
+      color: #fff; 
+      padding: 15px; 
+      font-weight: bold; 
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      cursor: pointer; 
+      box-shadow: 0 4px 15px rgba(255, 110, 130, 0.3);
+    }
+    
+    button:hover {
+      box-shadow: 0 6px 20px rgba(255, 110, 130, 0.5);
+      transform: translateY(-2px);
+    }
+
+    button:active { transform: scale(0.98) translateY(1px); opacity: 0.9; }
+    
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .box { 
+      background: rgba(255, 255, 255, 0.4); 
+      border: 1px solid rgba(255, 255, 255, 0.5); 
+      border-radius: 16px; 
+      padding: 18px; 
+      margin-bottom: 25px; 
+    }
+
+    .status-badge { 
+      display: block; 
+      text-align: center; 
+      font-size: 18px; 
+      font-weight: bold; 
+      padding: 12px; 
+      border-radius: 12px; 
+      text-shadow: 1px 1px 1px rgba(0,0,0,0.1);
+    }
+    
+    .status-new { 
+      background: #edfff4; 
+      color: #27ae60; 
+      border: 2px solid #2ecc71;
+      animation: pulse 1.5s infinite;
+    }
+    
+    .status-none { 
+      background: #fdfdfd; 
+      color: #95a5a6; 
+      border: 2px solid #bdc3c7;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+    }
+
     .hidden { display: none; }
   </style>
 </head>
 <body>
 
+  <div class="sunflower-area">
+    <svg style="display: none;">
+      <symbol id="icon-sunflower" viewBox="0 0 100 100">
+        <ellipse rx="8" ry="25" cx="50" cy="25" fill="#fbc531" transform="rotate(0 50 50)"/>
+        <ellipse rx="8" ry="25" cx="50" cy="25" fill="#fbc531" transform="rotate(30 50 50)"/>
+        <ellipse rx="8" ry="25" cx="50" cy="25" fill="#fbc531" transform="rotate(60 50 50)"/>
+        <ellipse rx="8" ry="25" cx="50" cy="25" fill="#fbc531" transform="rotate(90 50 50)"/>
+        <ellipse rx="8" ry="25" cx="50" cy="25" fill="#fbc531" transform="rotate(120 50 50)"/>
+        <ellipse rx="8" ry="25" cx="50" cy="25" fill="#fbc531" transform="rotate(150 50 50)"/>
+        <ellipse rx="8" ry="25" cx="50" cy="25" fill="#fbc531" transform="rotate(180 50 50)"/>
+        <ellipse rx="8" ry="25" cx="50" cy="25" fill="#fbc531" transform="rotate(210 50 50)"/>
+        <ellipse rx="8" ry="25" cx="50" cy="25" fill="#fbc531" transform="rotate(240 50 50)"/>
+        <ellipse rx="8" ry="25" cx="50" cy="25" fill="#fbc531" transform="rotate(270 50 50)"/>
+        <ellipse rx="8" ry="25" cx="50" cy="25" fill="#fbc531" transform="rotate(300 50 50)"/>
+        <ellipse rx="8" ry="25" cx="50" cy="25" fill="#fbc531" transform="rotate(330 50 50)"/>
+        <ellipse rx="5" ry="18" cx="50" cy="30" fill="#f1c40f" transform="rotate(15 50 50)"/>
+        <ellipse rx="5" ry="18" cx="50" cy="30" fill="#f1c40f" transform="rotate(45 50 50)"/>
+        <ellipse rx="5" ry="18" cx="50" cy="30" fill="#f1c40f" transform="rotate(75 50 50)"/>
+        <ellipse rx="5" ry="18" cx="50" cy="30" fill="#f1c40f" transform="rotate(105 50 50)"/>
+        <ellipse rx="5" ry="18" cx="50" cy="30" fill="#f1c40f" transform="rotate(135 50 50)"/>
+        <ellipse rx="5" ry="18" cx="50" cy="30" fill="#f1c40f" transform="rotate(165 50 50)"/>
+        <ellipse rx="5" ry="18" cx="50" cy="30" fill="#f1c40f" transform="rotate(195 50 50)"/>
+        <ellipse rx="5" ry="18" cx="50" cy="30" fill="#f1c40f" transform="rotate(225 50 50)"/>
+        <ellipse rx="5" ry="18" cx="50" cy="30" fill="#f1c40f" transform="rotate(255 50 50)"/>
+        <ellipse rx="5" ry="18" cx="50" cy="30" fill="#f1c40f" transform="rotate(285 50 50)"/>
+        <ellipse rx="5" ry="18" cx="50" cy="30" fill="#f1c40f" transform="rotate(315 50 50)"/>
+        <ellipse rx="5" ry="18" cx="50" cy="30" fill="#f1c40f" transform="rotate(345 50 50)"/>
+        <circle cx="50" cy="50" r="15" fill="#654321" stroke="#3d2a13" stroke-width="2"/>
+        <circle cx="50" cy="50" r="10" fill="#4b321a" stroke="#3d2a13" stroke-width="1" stroke-dasharray="2 2"/>
+      </symbol>
+    </svg>
+
+    <div class="sunflower sf-1"><svg><use xlink:href="#icon-sunflower"/></svg></div>
+    <div class="sunflower sf-2"><svg><use xlink:href="#icon-sunflower"/></svg></div>
+    <div class="sunflower sf-3"><svg><use xlink:href="#icon-sunflower"/></svg></div>
+    <div class="sunflower sf-4"><svg><use xlink:href="#icon-sunflower"/></svg></div>
+    <div class="sunflower sf-5"><svg><use xlink:href="#icon-sunflower"/></svg></div>
+  </div>
+
   <div class="card">
     <div id="login-screen">
-      <h2>Sign In</h2>
-      <p style="text-align: center; color: #aaa;">Enter <strong>Z</strong> for Zanieke or <strong>A</strong> for Ayushman</p>
+      <h2>🌸 Welcome 🌸</h2>
+      <p style="text-align: center; color: #888; margin-bottom: 20px;">Enter <strong>Z</strong> for Zanieke or <strong>A</strong> for Ayushman</p>
       <input type="text" id="login-input" placeholder="Type Z or A..." maxlength="1" style="text-align: center; text-transform: uppercase;" />
       <button onclick="login()">Enter App</button>
     </div>
@@ -35,16 +230,16 @@
       <h2 id="user-title"></h2>
       
       <div class="box">
-        <h3>1. Send Message</h3>
+        <h3>1. Send Message 🌻</h3>
         <textarea id="message-input" placeholder="Type your secret message here..."></textarea>
         <button id="send-btn" onclick="sendMessage()">Send Message</button>
       </div>
 
       <div class="box">
-        <h3>2. Inbox Status</h3>
+        <h3>2. Inbox Status 💌</h3>
         <div id="status-indicator" class="status-badge status-none">No New Messages</div>
         <br />
-        <button id="bt-btn" onclick="connectBluetooth()">Connect ESP32 via Bluetooth</button>
+        <button id="bt-btn" onclick="connectBluetooth()">Connect ESP32 Bluetooth</button>
       </div>
     </div>
   </div>
@@ -90,7 +285,7 @@
 
       document.getElementById("login-screen").classList.add("hidden");
       document.getElementById("app-screen").classList.remove("hidden");
-      document.getElementById("user-title").innerText = "Welcome, " + currentUser;
+      document.getElementById("user-title").innerText = "Hi, " + currentUser + "!";
 
       listenForMessages();
     };
@@ -102,6 +297,9 @@
       
       if (!text) return;
 
+      sendBtn.disabled = true;
+      sendBtn.innerText = "Sending...";
+
       // Send message to Recipient's node in Firebase
       set(ref(db, 'inbox/' + recipient), {
         text: text,
@@ -111,16 +309,25 @@
 
         // Change button appearance to Green "Sent! ✔️"
         const originalText = "Send Message";
+        const originalBg = sendBtn.style.background;
+        
         sendBtn.innerText = "Sent! ✔️";
-        sendBtn.style.backgroundColor = "#22c55e"; // Green
-        sendBtn.disabled = true;
+        // Override gradient with success green
+        sendBtn.style.background = "linear-gradient(45deg, #2ecc71 0%, #27ae60 100%)"; 
+        sendBtn.style.boxShadow = "0 4px 15px rgba(46, 204, 113, 0.4)";
 
         // Reset button back to default after 2 seconds (2000 ms)
         setTimeout(() => {
           sendBtn.innerText = originalText;
-          sendBtn.style.backgroundColor = "#3b82f6"; // Original Blue
+          sendBtn.style.background = originalBg; // Restore original gradient style defined in CSS
+          sendBtn.style.boxShadow = ""; // Restore CSS shadow
           sendBtn.disabled = false;
         }, 2000);
+      }).catch((error) => {
+        console.error("Firebase error:", error);
+        alert("Failed to send message. Check console.");
+        sendBtn.disabled = false;
+        sendBtn.innerText = "Send Message";
       });
     };
 
