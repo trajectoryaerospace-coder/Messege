@@ -80,6 +80,36 @@
       position: relative;
     }
 
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .header-bar h2 {
+      margin: 0;
+    }
+
+    .btn-switch {
+      background: rgba(255, 255, 255, 0.7);
+      color: #ff6b6b;
+      border: 1px solid #ff9a9e;
+      padding: 6px 12px;
+      font-size: 12px;
+      margin-bottom: 0;
+      width: auto;
+      border-radius: 20px;
+      box-shadow: none;
+    }
+
+    .btn-switch:hover {
+      background: #ff9a9e;
+      color: white;
+      transform: none;
+      box-shadow: none;
+    }
+
     h2, h3 { text-align: center; margin-top: 0; color: #ff6b6b; font-weight: 700; }
     h3 { color: #f7b731; font-size: 1.2rem; margin-bottom: 10px; text-shadow: 1px 1px 1px rgba(0,0,0,0.05);}
     
@@ -169,7 +199,26 @@
       100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
     }
 
-    .hidden { display: none; }
+    /* Modal Styling for Password Box */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.4);
+      display: flex; justify-content: center; align-items: center;
+      z-index: 100;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 320px;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
@@ -222,7 +271,10 @@
     </div>
 
     <div id="app-screen" class="hidden">
-      <h2 id="user-title"></h2>
+      <div class="header-bar">
+        <h2 id="user-title"></h2>
+        <button class="btn-switch" onclick="openPasswordModal()">⚙️ Switch User</button>
+      </div>
       
       <div class="box">
         <h3>1. Send Message 🌻</h3>
@@ -236,6 +288,16 @@
         <br />
         <button id="bt-btn" onclick="connectBluetooth()">Connect ESP32 Bluetooth</button>
       </div>
+    </div>
+  </div>
+
+  <div id="password-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h3 style="color: #ff6b6b; margin-bottom: 10px;">Enter Password</h3>
+      <p style="font-size: 14px; color: #666; margin-bottom: 15px;">Please enter the password to change user or sign out.</p>
+      <input type="password" id="pass-input" placeholder="Password..." style="margin-bottom: 15px;" />
+      <button onclick="verifyPassword()" style="margin-bottom: 10px;">Confirm</button>
+      <button onclick="closePasswordModal()" style="background: #ccc; color: #333; margin-bottom: 0;">Cancel</button>
     </div>
   </div>
 
@@ -256,17 +318,28 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    let currentUser = ""; // 'Zanieke' or 'Ayushman'
+    let currentUser = ""; 
     let recipient = "";
     let latestMessage = "";
     let hasNewMessage = false;
 
-    // Updated BLE Service & Characteristic UUIDs matching your ESP32 code
     const BLE_SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
     const BLE_CHAR_UUID    = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 
+    // --- AUTO LOGIN CHECK ON PAGE LOAD ---
+    window.addEventListener("DOMContentLoaded", () => {
+      const savedInput = localStorage.getItem("savedUserChoice");
+      if (savedInput) {
+        processLogin(savedInput);
+      }
+    });
+
     window.login = function() {
       const input = document.getElementById("login-input").value.trim().toUpperCase();
+      processLogin(input);
+    };
+
+    function processLogin(input) {
       if (input === 'Z') {
         currentUser = "Zanieke";
         recipient = "Ayushman";
@@ -278,11 +351,39 @@
         return;
       }
 
+      // Save choice locally to stay logged in
+      localStorage.setItem("savedUserChoice", input);
+
       document.getElementById("login-screen").classList.add("hidden");
       document.getElementById("app-screen").classList.remove("hidden");
       document.getElementById("user-title").innerText = "Hi, " + currentUser + "!";
 
       listenForMessages();
+    }
+
+    /* --- PASSWORD PROTECTED SIGN-OUT / SWITCH USER --- */
+    window.openPasswordModal = function() {
+      document.getElementById("pass-input").value = "";
+      document.getElementById("password-modal").classList.remove("hidden");
+    };
+
+    window.closePasswordModal = function() {
+      document.getElementById("password-modal").classList.add("hidden");
+    };
+
+    window.verifyPassword = function() {
+      const pass = document.getElementById("pass-input").value;
+      if (pass === "ilovezansm") {
+        // Clear stored login session
+        localStorage.removeItem("savedUserChoice");
+        document.getElementById("login-input").value = "";
+        
+        closePasswordModal();
+        document.getElementById("app-screen").classList.add("hidden");
+        document.getElementById("login-screen").classList.remove("hidden");
+      } else {
+        alert("Incorrect Password!");
+      }
     };
 
     window.sendMessage = function() {
@@ -347,7 +448,6 @@
       }
 
       try {
-        // acceptAllDevices displays ALL available/scanned Bluetooth devices in the browser menu
         const device = await navigator.bluetooth.requestDevice({
           acceptAllDevices: true,
           optionalServices: [BLE_SERVICE_UUID]
@@ -357,13 +457,11 @@
         const service = await server.getPrimaryService(BLE_SERVICE_UUID);
         const characteristic = await service.getCharacteristic(BLE_CHAR_UUID);
 
-        // Send latest message to ESP32 via BLE
         const encoder = new TextEncoder();
         await characteristic.writeValue(encoder.encode(latestMessage));
 
         alert("Message transferred to " + (device.name || "ESP32") + "!");
 
-        // Clear 'isNew' status in Firebase
         set(ref(db, 'inbox/' + currentUser), {
           text: latestMessage,
           isNew: false
