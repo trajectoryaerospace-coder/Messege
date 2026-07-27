@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Secret Messaging Hub</title>
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #121212; color: #ffffff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 15px; }
+    .card { background: #1e1e1e; border-radius: 16px; padding: 24px; width: 100%; max-width: 400px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+    h2, h3 { text-align: center; margin-top: 0; color: #4dabf7; }
+    input, textarea, button { width: 100%; margin-bottom: 15px; border-radius: 10px; border: none; outline: none; font-size: 16px; }
+    input, textarea { background: #2a2a2a; color: #fff; padding: 12px; }
+    textarea { resize: vertical; min-height: 80px; }
+    button { background: #3b82f6; color: white; padding: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    button:active { transform: scale(0.98); opacity: 0.9; }
+    .box { background: #262626; border: 1px solid #333; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+    .status-badge { display: block; text-align: center; font-size: 18px; font-weight: bold; padding: 10px; border-radius: 8px; }
+    .status-new { background: #15803d; color: #dcfce7; }
+    .status-none { background: #374151; color: #9ca3af; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <div id="login-screen">
+      <h2>Sign In</h2>
+      <p style="text-align: center; color: #aaa;">Enter <strong>Z</strong> for Zanieke or <strong>A</strong> for Ayushman</p>
+      <input type="text" id="login-input" placeholder="Type Z or A..." maxlength="1" style="text-align: center; text-transform: uppercase;" />
+      <button onclick="login()">Enter App</button>
+    </div>
+
+    <div id="app-screen" class="hidden">
+      <h2 id="user-title"></h2>
+      
+      <div class="box">
+        <h3>1. Send Message</h3>
+        <textarea id="message-input" placeholder="Type your secret message here..."></textarea>
+        <button onclick="sendMessage()">Send Message</button>
+      </div>
+
+      <div class="box">
+        <h3>2. Inbox Status</h3>
+        <div id="status-indicator" class="status-badge status-none">No New Messages</div>
+        <br />
+        <button id="bt-btn" onclick="connectBluetooth()">Connect ESP32 via Bluetooth</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCwIxU8JqTcGWwQGP6pVZCGs0jQ3SRsivY",
+      authDomain: "counter-6a15a.firebaseapp.com",
+      databaseURL: "https://counter-6a15a-default-rtdb.firebaseio.com",
+      projectId: "counter-6a15a",
+      storageBucket: "counter-6a15a.firebasestorage.app",
+      messagingSenderId: "296332301805",
+      appId: "1:296332301805:web:7dac60e469a81b86b743e4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let currentUser = ""; // 'Zanieke' or 'Ayushman'
+    let recipient = "";
+    let latestMessage = "";
+    let hasNewMessage = false;
+
+    // Nordic UART BLE Service & Characteristic UUIDs
+    const BLE_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+    const BLE_CHAR_UUID    = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+
+    window.login = function() {
+      const input = document.getElementById("login-input").value.trim().toUpperCase();
+      if (input === 'Z') {
+        currentUser = "Zanieke";
+        recipient = "Ayushman";
+      } else if (input === 'A') {
+        currentUser = "Ayushman";
+        recipient = "Zanieke";
+      } else {
+        alert("Invalid input! Type 'Z' or 'A'.");
+        return;
+      }
+
+      document.getElementById("login-screen").classList.add("hidden");
+      document.getElementById("app-screen").classList.remove("hidden");
+      document.getElementById("user-title").innerText = "Welcome, " + currentUser;
+
+      listenForMessages();
+    };
+
+    window.sendMessage = function() {
+      const text = document.getElementById("message-input").value.trim();
+      if (!text) return alert("Please type a message.");
+
+      // Send message to Recipient's node in Firebase
+      set(ref(db, 'inbox/' + recipient), {
+        text: text,
+        isNew: true
+      }).then(() => {
+        alert("Message Sent securely to " + recipient + "!");
+        document.getElementById("message-input").value = "";
+      });
+    };
+
+    function listenForMessages() {
+      // Listen to Current User's Inbox
+      const myInboxRef = ref(db, 'inbox/' + currentUser);
+      onValue(myInboxRef, (snapshot) => {
+        const data = snapshot.val();
+        const badge = document.getElementById("status-indicator");
+        if (data && data.isNew) {
+          hasNewMessage = true;
+          latestMessage = data.text;
+          badge.innerText = "NEW MESSAGE RECEIVED! 📩";
+          badge.className = "status-badge status-new";
+        } else {
+          hasNewMessage = false;
+          badge.innerText = "No New Messages";
+          badge.className = "status-badge status-none";
+        }
+      });
+    }
+
+    window.connectBluetooth = async function() {
+      if (!hasNewMessage) {
+        alert("No new message to transmit!");
+        return;
+      }
+
+      const expectedDeviceName = currentUser + "'s Device";
+
+      try {
+        const device = await navigator.bluetooth.requestDevice({
+          filters: [{ name: expectedDeviceName }],
+          optionalServices: [BLE_SERVICE_UUID]
+        });
+
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService(BLE_SERVICE_UUID);
+        const characteristic = await service.getCharacteristic(BLE_CHAR_UUID);
+
+        // Send latest message to ESP32 via BLE
+        const encoder = new TextEncoder();
+        await characteristic.writeValue(encoder.encode(latestMessage));
+
+        alert("Message transferred to your ESP32 display!");
+
+        // Clear 'isNew' status in Firebase
+        set(ref(db, 'inbox/' + currentUser), {
+          text: latestMessage,
+          isNew: false
+        });
+
+        device.gatt.disconnect();
+      } catch (err) {
+        console.error(err);
+        alert("Bluetooth Error: " + err.message);
+      }
+    };
+  </script>
+</body>
+</html>
